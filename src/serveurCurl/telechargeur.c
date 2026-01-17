@@ -83,6 +83,8 @@ void executerRequete(int pipeFd, char* reqBuffer){
 
     /* init the curl session */
     curl_handle = curl_easy_init();
+    /* Bypass any SSL verification (erreurs avec le serveur GELGIF) */
+    curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0);
     /* specify URL to get */
     curl_easy_setopt(curl_handle, CURLOPT_URL, fname);
     /* send all data to this function  */
