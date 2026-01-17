@@ -9,5 +9,5 @@ SET(GCC_ADDRESS_SANITIZER_FLAGS "-fno-omit-frame-pointer") # -fsanitize=address"
 SET(FUSE_FILE_OFFSET_FLAG "-D_FILE_OFFSET_BITS=64")
 add_definitions("${FUSE_FILE_OFFSET_FLAG} ${GCC_WARNING_FLAGS} ${GCC_ADDRESS_SANITIZER_FLAGS}")
 
-add_executable(tp2client ${SOURCE_CLIENT})
-target_link_libraries(tp2client fuse)
+add_executable(setr_tp2_daemonfuse ${SOURCE_CLIENT})
+target_link_libraries(setr_tp2_daemonfuse fuse)

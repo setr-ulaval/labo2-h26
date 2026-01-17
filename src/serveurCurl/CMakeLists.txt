@@ -8,5 +8,5 @@ SET(GCC_WARNING_FLAGS "-Wall -Wextra -Wpedantic -Wduplicated-cond -Wlogical-op -
 SET(GCC_ADDRESS_SANITIZER_FLAGS "-fno-omit-frame-pointer") # -fsanitize=address")
 add_definitions("${GCC_WARNING_FLAGS} ${GCC_ADDRESS_SANITIZER_FLAGS}")
 
-add_executable(tp2serveur ${SOURCE_SERVEUR})
-target_link_libraries(tp2serveur curl)
+add_executable(setr_tp2_serveurcurl ${SOURCE_SERVEUR})
+target_link_libraries(setr_tp2_serveurcurl curl)
