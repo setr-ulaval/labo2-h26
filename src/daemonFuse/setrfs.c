@@ -175,7 +175,7 @@ static int setrfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		struct stat st;
 		memset(&st, 0, sizeof(st));
 		st.st_ino = 1; 			// countInode++;
-		st.st_mode = (S_IFREG & S_IFMT) | 0777;	// Fichier regulier, permissions 777
+		st.st_mode = (S_IFREG & S_IFMT) | 0777;	// Fichier regulier, permissions 777; IGNOREZ le potentiel "souligne rouge" sous les symboles S_IFREG and S_IFMT
 		//if(VERBOSE)
 		//	printf("Insertion du fichier %s dans la liste du repertoire\n", nomFichier);
 		if (filler(buf, nomFichier, &st, 0)){
