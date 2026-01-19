@@ -28,7 +28,7 @@ Ce serveur possède une interface très simple. Afin de pouvoir réellement mett
 
 Cette manière de découper le problème entre, d'une part, un programme capable d'effectuer des requêtes HTTP pour transférer localement un fichier, mais n'offrant qu'une interface limitée, et, d'autre part, un programme offrant une interface de système de fichiers complète, mais incapable de récupérer un fichier autrement que par une interface simple, confère une grande polyvalence à ce système. Par exemple, si l'on souhaitait plutôt avoir un système de fichiers offrant une couche d'abstraction à un serveur FTP, il suffit de remplacer le *daemon* de téléchargement, l'implémentation du *daemon* offrant le système de fichiers à proprement parler restant exactement la même.
 
-> **Attention** : ne confondez pas le serveur de téléchargement (que vous implémentez) et le serveur HTTP (accessible sur le [site web du département](http://wcours.gel.ulaval.ca/GIF3004/labo2/index.txt) par exemple). Dans l'ordre, le serveur HTTP contient des fichiers; _votre_ serveur de téléchargement le contactera pour obtenir les fichiers, qu'il transmettra par la suite au _client_ FUSE, qui gérera les accès bas niveau au système de fichier.
+> **Attention** : ne confondez pas le serveur de téléchargement (que vous implémentez) et le serveur HTTP (accessible sur le [site web du département](http://wcours.gel.ulaval.ca/GIF3004/labo2/index.txt) par exemple). Le serveur HTTP contient des fichiers; _votre_ serveur de téléchargement le contactera pour obtenir les fichiers, qu'il transmettra par la suite au _client_ FUSE, qui gérera les accès bas niveau au système de fichier.
 
 
 ## 3. Préparation et outils nécessaires
@@ -45,7 +45,7 @@ Pour information, les dépendances sont les suivantes :
 * [libFUSE](https://github.com/libfuse/libfuse) -- attention cependant à utiliser la version **2** et non la version 3
 * fusermount
 
-Ces librairies sont déjà installées dans le disque image du cours. Elles devraient aussi avoir été synchronisées avec votre chaîne de compilation croisée lors du laboratoire 1. Vous n'avez donc normalement rien à faire. Si ce n'est pas le cas, assurez vous de copier les fichiers objets (fichiers *.a* et *.so*) et en-têtes de ces librairies sur votre ordinateur en suivant la procédure du laboratoire 1.
+Ces librairies sont déjà installées dans le disque image du cours. Elles devraient aussi avoir été synchronisées avec votre chaîne de compilation croisée lors du laboratoire 1. Vous n'avez donc normalement rien à faire. Si vous avez installé votre propre chaîne de compilation croisée, assurez vous qu'elle est à jour.
 
 ### 3.2. Configuration des dossiers
 
@@ -104,14 +104,32 @@ De manière générale, l'écriture de ce *daemon* consiste à implémenter les 
 Notez que tous ces traitements s'effectuent de manière intrinsèquement parallèle. En effet, FUSE utilise un nouveau processus léger (*thread*) pour chaque appel système, ce qui signifie que plusieurs fichiers peuvent être ouverts simultanément, ou même que deux processus distincts peuvent ouvrir le même fichier (et donc partager le même cache). Assurez-vous donc de synchroniser vos accès au cache en utilisant le *mutex* déclaré dans les structures de données qui vous sont fournies et de ne supprimer une entrée du cache que lorsque *tous* les processus l'utilisant sont terminés. Pour vous aider au départ, les scripts de VSC sont configurés pour passer l'option `-s` à votre programme pour requérir un fonctionnement *single-threaded*, mais vous **devez** supporter le mode normal (multithread) pour l'évaluation. Pour tester ce cas, une fois votre programme débogué en mode *single-thread*, vous pouvez le lancer directement à partir d'un terminal SSH.
 
 
-## 6. Outils
+## 6. Exécution et outils
 
 Afin de vous permettre de tester votre code, un serveur HTTP a été mis en place à l'adresse *http://wcours.gel.ulaval.ca/GIF3004/labo2/*. Cette URL pointe vers un dossier contenant plusieurs fichiers de diverses tailles allant de 1 Ko à 100 Mo. La liste des fichiers est donnés dans le fichier *[index.txt](http://wcours.gel.ulaval.ca/GIF3004/labo2/index.txt)*. *Notez que vous n'avez pas accès à l'URL du dossier, vous devez spécifiquement demander un fichier.*
+
+Pour tester votre code, il faut :
+
+1. Lancer le processus serveur (projet *serveurCurl*, créant l'exécutable `setr_tp2_serveurcurl`) sur le Raspberry Pi Zero W
+2. Lancer le processeur client (projet *daemonFuse*, créant l'exécutable `setr_tp2_daemonfuse`) sur le Raspberry Pi Zero W, avec un dossier vide servant de point de montage comme argument (normalement, `/home/pi/projects/laboratoire2/pointdemontage`)
+3. Faire des opérations (par exemple `ls` ou `cat`) sur les fichiers de ce point de montage en vous connectant en SSH sur votre Raspberry Pi Zero W, par exemple `ls /home/pi/projects/laboratoire2/pointdemontage` qui devrait vous afficherla liste des fichiers présents dans [index.txt](http://wcours.gel.ulaval.ca/GIF3004/labo2/index.txt)
+
+Le lancement des processus peut être fait :
+
+* En lançant le débogage pour ce projet
+* En exécutant manuellement le programme en question sur une connexion SSH (`/home/pi/projects/laboratoire2/setr_tp2_serveurcurl` ou `/home/pi/projects/laboratoire2/setr_tp2_daemonfuse`) *une fois celui-ci synchronisé sur le Raspberry Pi*. La synchronisation est faite automatiquement à chaque lancement de débogage, vous pouvez donc simplement lancer une session de débogage et l'arrêter immédiatement si vous voulez être certain que votre exécutable est synchronisé.
 
 Le fichier *[md5sums.txt](http://wcours.gel.ulaval.ca/GIF3004/labo2/md5sums.txt)* contient quant à lui la somme MD5 de chaque fichier du répertoire (sauf lui-même), pour faciliter la validation. Par exemple, si vous voulez vérifier que votre programme est en mesure de télécharger sans erreur le fichier *[file1Mo](http://wcours.gel.ulaval.ca/GIF3004/labo2/file1Mo)*, utilisez simplement la commande `md5sum file1Mo`. Le résultat devrait être le même que celui contenu dans le fichier *[md5sums.txt](http://wcours.gel.ulaval.ca/GIF3004/labo2/md5sums.txt)*; si ce n'est pas le cas, c'est qu'il y a une erreur dans votre programme et que vous n'êtes pas en mesure de restituer le fichier dans son intégrité.
 
 N'oubliez pas que votre système de fichiers doit pouvoir gérer plusieurs requêtes simultanées. À titre d'exemple, télécharger le fichier *[file100Mo](http://wcours.gel.ulaval.ca/GIF3004/labo2/file100Mo)* devrait demander plusieurs secondes vu la taille de ce dernier; vous devriez être en mesure d'afficher un autre petit fichier (comme *[fichier.cpp](http://wcours.gel.ulaval.ca/GIF3004/labo2/fichier.cpp)* ou *[logo.png](http://wcours.gel.ulaval.ca/GIF3004/labo2/logo.png)*) presque instantanément, sans devoir attendre la fin du téléchargement du gros fichier!
 
+### 6.1. Exécutables fournis
+
+Afin de vous permettre de déboguer plus facilement vos programmes, nous vous fournissons les **exécutables binaires (compilés) pour chaque programme** (client et serveur). Ces exécutables constituent la solution du laboratoire et sont présents dans le dossier *executables* du dépôt Git. Vous pouvez donc, par exemple, tester votre programme client en utilisant la solution du programme serveur, et vice-versa. Évidemment, ces binaires ne peuvent être remis pour l'évaluation : vous devez implémenter vos propres programmes!
+
+Pour les utiliser, vous pouvez les transférer sur votre Raspberry Pi, puis les lancer indépendamment, dans un terminal, juste avant (ou après) avoir lancé votre propre programme. `./setrh2026-tp2-serveurCurl-solution` suffit pour le serveur, le client doit quant à lui être lancé avec le chemin vers le point de montage, par exemple `./setrh2026-tp2-daemonFuse-solution -f -s /home/pi/projects/laboratoire2/pointdemontage`. Retirez le `-s` si vous voulez utiliser le mode multi-threads, par contre dans ce cas le programme ne vous affichera pas d'information de débogage dans le terminal.
+
+> **Attention** : bien que les programmes fournis soient *corrects* (au sens où ils respectent l'énoncé du laboratoire), ils ne sont pas infaillibles et résistants à toute requête incorrecte. Envoyer des données erronées à ces programmes _peut_ conduire à un plantage ou un blocage. Par exemple, si votre serveur envoie un message incorrectement formaté (ex. la taille indiqué dans l'en-tête de votre réponse ne correspond pas réellement à la taille du fichier qui suit), le programme client que nous vous fournissons a de bonnes chances de s'arrêter brutalement ou de bloquer. De même, si une requête ne contient aucun status valide, le comportement du serveur sera imprévisible.
 
 ## 7. Précisions et limitations du projet
 
@@ -145,16 +163,8 @@ Comme dans le laboratoire 1, les scripts sont configurés de manière à activer
 
 > Note importante : il est possible que certains outils d'analyse de code émettent des avertissements _faux positifs_, à savoir des avertissements qui n'en sont pas vraiment (et que le compilateur, lui, n'émettra pas). Par exemple, vous pourrez probablement observer que les symbols tels que `S_IFMT` sont soulignés en rouge dans VScode (avec un avertissement de type _Identifier X is undefined_). Ceci ne sont **pas** des avertissements qui vous pénaliseront (puisqu'ils sont faux et dus à des limitations dans l'outil d'analyse). Lorsque nous évaluons votre code pour savoir si le _compilateur_ émet des avertissements, nous faisons toujours `CMake Clean` puis `CMake Build` et observons la sortie dans la terminal. Si aucun avertissement (ou erreur!) ne s'affiche, le code est considéré comme conforme sur ce point.
 
-## 8. Exécutables fournis
 
-Afin de vous permettre de déboguer plus facilement vos programmes, nous vous fournissons les **exécutables binaires (compilés) pour chaque programme** (client et serveur). Ces exécutables constituent la solution du laboratoire et sont présents dans le dossier *executables* du dépôt Git. Vous pouvez donc, par exemple, tester votre programme client en utilisant la solution du programme serveur, et vice-versa. Évidemment, ces binaires ne peuvent être remis pour l'évaluation : vous devez implémenter vos propres programmes!
-
-Pour les utiliser, vous pouvez les transférer sur votre Raspberry Pi, puis les lancer indépendamment, dans un terminal, juste avant (ou après) avoir lancé votre propre programme. `./setrh2026-tp2-serveurCurl-solution` suffit pour le serveur, le client doit quant à lui être lancé avec le chemin vers le point de montage, par exemple `./setrh2026-tp2-daemonFuse-solution -f -s /home/pi/projects/laboratoire2/pointdemontage`. Retirez le `-s` si vous voulez utiliser le mode multi-threads, par contre dans ce cas le programme ne vous affichera pas d'information de débogage dans le terminal.
-
-> **Attention** : bien que les programmes fournis soient *corrects* (au sens où ils respectent l'énoncé du laboratoire), ils ne sont pas infaillibles et blindés contre toute requête incorrecte. Envoyer des données erronées à ces programmes _peut_ conduire à un plantage ou un blocage du programme. Par exemple, dans le cadre de ce laboratoire, si votre serveur envoie un message incorrectement formaté (ex. la taille indiqué dans l'en-tête de votre réponse ne correspond pas réellement à la taille du fichier qui suit), le programme client que nous vous fournissons a de bonnes chances de s'arrêter brutalement ou de bloquer. De même, si une requête ne contient aucun status valide, le comportement du serveur sera imprévisible.
-
-
-## 9. Modalités d'évaluation
+## 8. Modalités d'évaluation
 
 Ce travail doit être réalisé **en équipe de deux**, la charge de travail étant à répartir équitablement entre les deux membres de l'équipe. Aucun rapport n'est à remettre, mais vous devez soumettre votre code source dans monPortail avant le **11 février 2026, 23h59**. Ensuite, lors de la séance de laboratoire du **13 février 2026**, les **deux** équipiers doivent être présent pour l'évaluation individuelle de 30 minutes. Si vous ne pouvez pas vous y présenter, contactez l'équipe pédagogique du cours dans les plus brefs délais afin de convenir d'une date d'évaluation alternative. Ce travail compte pour **12%** de la note totale du cours.
 
@@ -166,7 +176,7 @@ L'évaluation en personne se fait sur le matériel (Raspberry Pi Zero W) de l'é
 
 * **Terminal 1**: c'est celui qui exécutera le serveur, soit la commande `/home/pi/projects/laboratoire2/setr_tp2_serveurcurl`;
 * **Terminal 2**: il exécute et affiche la sortie du daemon, donc `/home/pi/projects/laboratoire2/setr_tp2_daemonfuse -f /home/pi/projects/laboratoire2/pointdemontage`. Avant de lancer le daemon, nous noterons le PID du serveur à l'aide de la commande `ps ax | grep setr_tp2_serveurcurl`. Ce PID sera utilisé pour envoyer un signal `SIGUSR2` au serveur par la suite;
-* **Terminal 3**: ce terminal et le suivant simuleront deux utilisateurs. Nous y exécuterons les commandes listées ci-après dans l'ordre. **Attention**, deux commandes seront lancées simultanément (ou plutôt rapidement l'une après l'autre) dans les terminaux 3 et 4:
+* **Terminal 3**: ce terminal et le suivant simuleront deux utilisateurs. Nous y exécuterons les commandes listées ci-après dans l'ordre. **Attention**, deux commandes seront lancées simultanément (ou plutôt, rapidement l'une après l'autre) dans les terminaux 3 et 4:
   * `cd /home/pi/projects/laboratoire2/pointdemontage`;
   * `ls`;
   * `cat fichier.cpp`;
@@ -178,17 +188,17 @@ L'évaluation en personne se fait sur le matériel (Raspberry Pi Zero W) de l'é
   * `md5sum file1Mo`.
 * Il est possible que nous exécutions d'autres commandes lors de l'évaluation.
 
-### 9.1. Barème d'évaluation
+### 8.1. Barème d'évaluation
 
-Pour l'obtention de la note d'équipe, le barême d'évaluation détaillé sera le suivant (laboratoire noté sur 20 points) :
+La note individuelle est composée de la note d'équipe, ajustée d'un facteur individuel. Pour l'obtention de la note d'équipe, le barême d'évaluation détaillé sera le suivant (laboratoire noté sur 20 points) :
 
-#### 9.1.1. Qualité du code remis (7 points)
+#### 8.1.1. Qualité du code remis (7 points)
 
 * (5 pts) Le code C est valide, complet et ne contient pas d'erreurs empêchant le bon déroulement des programmes.
 * (1 pts) La compilation des deux exécutables ne génère aucun avertissement (*warning*) de la part du compilateur.
 * (1 pts) Les erreurs éventuelles (fichier non existant, module serveur non démarré) sont correctement signalées.
 
-#### 9.1.2. Validité de la solution (13 points)
+#### 8.1.2. Validité de la solution (13 points)
 
 > **Attention** : un programme ne compilant pas obtient automatiquement une note de **zéro** pour cette section.
 
@@ -199,15 +209,15 @@ Pour l'obtention de la note d'équipe, le barême d'évaluation détaillé sera 
 * (2 pts) Le système complet est en mesure de gérer plusieurs fichiers en même temps, tant du côté du module serveur (téléchargement parallèle de plusieurs fichiers) que du côté du module client (plusieurs appels au système de fichiers simultanés).
 * (1 pts) L'envoi d'un signal SIGUSR2 au module serveur écrit correctement les statistiques courantes sur la console.
 
-#### 9.1.3. Évaluation individuelle
+#### 8.1.3. Évaluation individuelle
 
-La note obtenue à l'évaluation écrite individuelle du 13 février 2026 deviendra un facteur multiplicatif appliqué individuellement sur la note d'équipe. Par exemple, une note de 75% à l'évaluation individuelle combinée à une note de 90% pour le code remis résultera en une note de 0.75*0.90 = 67.5%. Une absence non-motivée à cette évaluation entraîne une note (et donc un facteur multiplicatif) de 0.
+Une évaluation individuelle écrite portant sur le laboratoire sera tenue, *en personne*, à la séance d'atelier du 13 février 2026. La note obtenue à cette évaluation deviendra un facteur multiplicatif appliqué individuellement sur la note d'équipe. Par exemple, une note de 75% à l'évaluation individuelle combinée à une note de 90% pour le code remis résultera en une note de 0.75*0.90 = 67.5%. Une absence non-motivée à cette évaluation entraîne une note (et donc un facteur multiplicatif) de 0.
 
-#### 9.1.4. Questionnaire sur l'utilisation de l'IA
+#### 8.1.4. Questionnaire sur l'utilisation de l'IA
 
-Votre remise _doit_ inclure le fichier `UTILISATION_IA.txt` dûment complété. Les réponses ne sont pas évaluées en tant que telles, mais ne pas remettre ce fichier entraîne une pénalité automatique de 10% sur la note d'équipe.
+Votre remise _doit_ inclure le fichier `UTILISATION_IA.txt` dûment complété. Les réponses ne sont pas évaluées en tant que telles, mais ne pas remettre ce fichier (ou le remettre dans son état initial, sans modifications et réponses aux questions) entraîne une pénalité automatique de 10% sur la note d'équipe.
 
-## 10. Ressources et lectures connexes
+## 9. Ressources et lectures connexes
 
 * Les [pages de manuel (man) de Linux](http://man7.org/linux/man-pages/index.html). Ces pages sont également disponibles sur la plupart des ordinateurs utilisant Linux, en tapant la commande `man nom_de_la_commande`.
 * Un [tutoriel détaillé](https://computing.llnl.gov/tutorials/pthreads/) sur les threads POSIX (*pthreads*).
